@@ -41,6 +41,9 @@ public:
 	static const int DEP_HCAL_COU = 9 ;
 	static const int DEP_ECAL_COU = 24 ;
 	static const int DEP_PRE_COU = 6 ;
+	static const int DEP_HCAL_TRG_COU = 8 ;
+	static const int DEP_ECAL_TRG_COU = 20 ;
+	static const int DEP_PRE_TRG_COU = 6 ;
 
 	fcs_trg_base() ;
 	virtual ~fcs_trg_base() ;
@@ -49,6 +52,7 @@ public:
 	void stage_0(adc_tick_t adc, geom_t geo, ped_gain_t *pg, u_int *to_s1) ;
 	void stage_0_201900(adc_tick_t adc, geom_t geo, ped_gain_t *pg, u_int *to_s1) ;
 	void stage_0_202101(adc_tick_t adc, geom_t geo, ped_gain_t *pg, u_int *to_s1) ;
+	void stage_0_202103(adc_tick_t adc, geom_t geo, ped_gain_t *pg, u_int *to_s1) ;
 
 	void stage_1(u_int from_s0[], geom_t geo, link_t to_s2[]) ;
 	void stage_1_201900(u_int from_s0[], geom_t geo, link_t to_s2[]) ;
@@ -58,12 +62,15 @@ public:
 	void stage_2_201900(link_t ecal[], link_t hcal[], link_t pres[], geom_t geo, link_t output[]) ;
 	void stage_2_202201(link_t ecal[], link_t hcal[], link_t pres[], geom_t geo, link_t output[]) ;
 	void stage_2_TAMU_202202(link_t ecal[], link_t hcal[], link_t pres[], geom_t geo, link_t output[]) ;
+	void stage_2_202203(link_t ecal[], link_t hcal[], link_t pres[], geom_t geo, link_t output[]) ;
 	void stage_2_tonko_202101(link_t ecal[], link_t hcal[], link_t pres[], geom_t geo, link_t output[]) ;
+	void stage_2_tonko_202104(link_t ecal[], link_t hcal[], link_t pres[], geom_t geo, link_t output[]) ;
 
 	// stage_3 is running in DEP/IO (1 Main) connected to STAR Trigger RAT/DSM
 	void stage_3(link_t from_s2[], u_short *to_dsm) ;
 	void stage_3_201900(link_t from_s2[], u_short *to_dsm) ;
 	void stage_3_202201(link_t from_s2[], u_short *to_dsm) ;
+	void stage_3_202203(link_t from_s2[], u_short *to_dsm) ;
 	void stage_3_tonko_202101(link_t from_s2[], u_short *to_dsm) ;
 
 	virtual u_int get_version() ;
@@ -189,6 +196,10 @@ public:
 
 	} d_out ;
 
+	// if there's any output to DSM
+	u_int dsm_any ;
+	int dsm_xing ;
+
 	// statics below
 	static u_int data_format ;	// 0:pre FY21, 1=FY21
 
@@ -220,9 +231,7 @@ public:
 	static int fcs_trgDebug ;
 
 	// per event 
-	int s1_bad ;
-	int s2_bad ;
-	int s3_bad ;
+	int event_bad ;
 
 	// stage_x algo params (same as in firmware)
 	static u_short stage_params[4][16] ;	// [stage][param_ix] ;
@@ -261,19 +270,22 @@ public:
 	static u_short JETTHR2 ;       
 	static u_short ETOTTHR ;       
 	static u_short HTOTTHR ;       
-
-
-	// various stuff...
-
+	static u_short EHTTHR ;
+	static u_short HHTTHR ;
+	static u_short PHTTHR ;
 
         // Ecal and Hcal 4x4 sums, Ecal+nearest Hcal sum, and Pres(EPD) hit pattern at stage2
+	u_int e2x2[2][16][10];
+	u_int h2x2[2][10][6];
         u_int esum[2][15][9];
         u_int epdcoin[2][15][9];
-        u_int hsum[2][9][5];
+	u_int hsum[2][9][5];
         u_int padc[2][6][32];
         u_int phit[2][6][32];
         u_int sum [2][15][9];
         float ratio[2][15][9];
+        u_int em[2][15][9];
+        u_int had[2][15][9];
         u_int jet[2][3];
         u_int etot[2];
         u_int htot[2];    

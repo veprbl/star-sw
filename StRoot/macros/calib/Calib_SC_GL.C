@@ -128,7 +128,7 @@
 
 // Switches for users? Needs better arrangement
 Int_t EWmode = 0; // -1 east, 0 both, 1 west
-Int_t EW_ASYMMETRY = kTRUE;
+Int_t EW_ASYMMETRY = kFALSE;
 
 // Switches and constants for experts
 Bool_t USE_OLD_STDDEV = kTRUE; // method for determining STDDEV
@@ -138,6 +138,8 @@ Bool_t FORCE_g4_same  = kTRUE;
 Bool_t FORCE_g5_same  = kTRUE; // if g4_same, then g3_same and g5_same are equivalent
 Bool_t NO_PLOTS       = kFALSE;
 Bool_t BY_SECTOR      = kFALSE;
+Bool_t FIX_GL         = kFALSE;
+double GUESS_GL       = 9.0; // auto-sets to 0.5 for runs>20000000 (iTPC) unless FIX_GL is true
 double GUESS_g5       = 15.0;
 double MAX_DEV        = 4.0;
 double REF_CONST1     = 0.318;
@@ -146,8 +148,8 @@ double RUN_CORRELATE  = 0.70;  // Assume that RUN_CORRELATE fraction of variance
                                // (lower values may help with failed fits)
 
 // Main routine:
-void Calib_SC_GL(const char* input=0, const char* cuts=0, int scaler=-1, int debug=0, const char* gcuts=0);
-void Calib_SC_GL(const char* input, const char* cuts, const char* scalerstr, int debug=0, const char* gcuts=0);
+int  Calib_SC_GL(const char* input=0, const char* cuts=0, int scaler=-1, int debug=0, const char* gcuts=0);
+int  Calib_SC_GL(const char* input, const char* cuts, const char* scalerstr, int debug=0, const char* gcuts=0);
 
 // Fitting functions:
 Double_t funcGapf(Double_t* x, Double_t* pars);
@@ -296,13 +298,14 @@ Bool_t ITER0 = kFALSE;
 // Main routine
 //////////////////////////////////////////
 
-void Calib_SC_GL(const char* input, const char* cuts, const char* scalerstr, int debug, const char* gcuts) {
+int Calib_SC_GL(const char* input, const char* cuts, const char* scalerstr, int debug, const char* gcuts) {
   scastr = scalerstr;
-  if (scastr.Contains(":")) Calib_SC_GL(input,cuts,  -999,debug,gcuts);
-  else                      Calib_SC_GL(input,cuts,nsca-1,debug,gcuts);
+  return (scastr.Contains(":") ?
+          Calib_SC_GL(input,cuts,  -999,debug,gcuts) :
+          Calib_SC_GL(input,cuts,nsca-1,debug,gcuts) );
 }
 
-void Calib_SC_GL(const char* input, const char* cuts, int scaler, int debug, const char* gcuts) {
+int Calib_SC_GL(const char* input, const char* cuts, int scaler, int debug, const char* gcuts) {
 
   // Define useful luminosity scaler detectors
   //   copied from StRoot/StDetectorDbMaker/St_spaceChargeCorC.cxx
@@ -330,19 +333,19 @@ void Calib_SC_GL(const char* input, const char* cuts, int scaler, int debug, con
 
   if (BY_SECTOR && EWmode==0) {
     printf("Error: must do east or west only when processing by sector!");
-    return;
+    return 1;
   }
   if (EW_ASYMMETRY && EWmode!=0) {
     printf("Error: must do both east and west when processing full asymmetry!");
-    return;
+    return 1;
   }
   if (EW_ASYMMETRY && BY_SECTOR) {
     printf("Error: by sector not yet implemented when processing full asymmetry!");
-    return;
+    return 1;
   }
   
-
-  if (Init(input)) return;
+  int status = Init(input);
+  if (status) return status;
   
   cut = ((cuts) ? cuts : "");
   gcut = ((gcuts) ? gcuts : cut.GetTitle());
@@ -356,7 +359,8 @@ void Calib_SC_GL(const char* input, const char* cuts, int scaler, int debug, con
       ITER0 = kTRUE;
       printf("\n*** Running PCA iteration 0 ***\n\n");
       // First iteration uses a single input dataset to define PCA
-      Calib_SC_GL(input,cuts,scaler,debug,gcuts);
+      status = Calib_SC_GL(input,cuts,scaler,debug,gcuts);
+      if (status) return status;
       // Second pass uses all input datasets to define PCA
       NO_PLOTS = no_plots;
       ITER0 = kFALSE;
@@ -374,7 +378,7 @@ void Calib_SC_GL(const char* input, const char* cuts, int scaler, int debug, con
     }
   }
 
-  int i,j,k,status;
+  int i,j,k;
   double temp1,temp2,temp3,vsc_min = 1e10;
   int jmin=-1;
 
@@ -482,6 +486,7 @@ void Calib_SC_GL(const char* input, const char* cuts, int scaler, int debug, con
       memcpy(&(m_ugl[nMeasures]),SCi[i]->GetV1(),nMeasuresI*sizeof(Double_t));
       ugl[i] = m_ugl[nMeasures];
     } else for (k=0; k<nMeasuresI; k++) m_ugl[k+nMeasures] = ugl[i]; // if not in the ntuple
+    if (!FIX_GL && (m_runs[0] > 20000000)) GUESS_GL = 0.5;
     for (k=0; k<nMeasuresI; k++) {
       m_set[k+nMeasures] = i;
       m_runIdx[k+nMeasures] = k+nMeasures;
@@ -517,7 +522,7 @@ void Calib_SC_GL(const char* input, const char* cuts, int scaler, int debug, con
     STDDEV = STDDEV_SC;
 
     // Set starting values and step sizes for parameters
-    double sce_init = 25.0; // approximate guess on (g5 + GL)
+    double sce_init = GUESS_g5 + GUESS_GL; // approximate guess on (g5 + GL)
     if (DO_PCA) {
       if (!ITER0) sce_init = fitParsSCGL[1]+fitParsSCGL[4];
     } else {
@@ -586,7 +591,7 @@ void Calib_SC_GL(const char* input, const char* cuts, int scaler, int debug, con
   //////////////////////////////////////////
   // Set up for using the best scaler
 
-  if (jmin<0) { printf("ERROR - no good scaler found\n"); return; }
+  if (jmin<0) { printf("ERROR - no good scaler found\n"); return 1; }
   const char* detbest = dets[jmin].Data();
   if (scaler<0) { // were looking for the best scaler
     printf("*** Best scaler = %s  [ID = %d]\n\n",detbest,jmin);
@@ -621,12 +626,13 @@ void Calib_SC_GL(const char* input, const char* cuts, int scaler, int debug, con
   }
 
   // Set starting values and step sizes for parameters
+  double scale_init = GUESS_GL / (GUESS_g5 + GUESS_GL); // SC*GL = SC*(g5+GL) * GL/(g5+GL)
   TString gname[3] = {"g2","g1/g2 = SCxGL","GLO"};
-  Double_t gstart[3] = {1.0, sce[jmin]*0.4, 0.}; // guess GL/(g5+GL) ~=(10/(15+10)) ~= 0.4
-  Double_t gstep[3]  = {0.01, sceE[jmin]*0.4, 100.0};
+  Double_t gstart[3] = {1.0, sce[jmin]*scale_init, fitParsSC[0]};
+  Double_t gstep[3]  = {0.01, sceE[jmin]*scale_init, fitParErrsSC[0]};
   if (DO_PCA) {
-    gstart[1] = 10.0; // gues GL ~= 10.0
-    gstep[1] = 1.0;
+    gstart[1] = GUESS_GL;
+    gstep[1] = 0.1*GUESS_GL;
   }
   SetMinuitPars(3,gname,gstart,gstep,debug);
   minuit->SetFCN(fnchGapf);
@@ -636,7 +642,12 @@ void Calib_SC_GL(const char* input, const char* cuts, int scaler, int debug, con
   status = FitWithOutlierRemoval(debug);
   if (status) {
     printf("Fit failed for gapf, err = %d\n",status);
-    return;
+    if (!FIX_GL) return 1;
+    printf("Continuing with a fixed GL.");
+    fitPars[1] = gstart[1];
+    fitParErrs[1] = gstep[1];
+    fitPars[2] = gstart[2];
+    fitParErrs[2] = gstep[2];
   }
   if (!NO_PLOTS && debug>0) {
     if (conGL ==0) {
@@ -695,10 +706,10 @@ void Calib_SC_GL(const char* input, const char* cuts, int scaler, int debug, con
   int npar = 9;
   TString fname[9] = {"g2","log(g5)","log(SC)","SO","log(GL)","GLO","log(g5r)","log(g4r)","log(ewratio)"};
   Double_t fstart[9] = {fitParsGL[0], TMath::Log(fitParsSC[2]), TMath::Log(scp),
-    sop, TMath::Log(9.0), GLO, 0, 0, TMath::Log(ewp)};
+    sop, TMath::Log(GUESS_GL), GLO, 0, 0, TMath::Log(ewp)};
   Double_t fstep[9]  = {fitParErrsGL[0], fitParErrsSC[2]/fitParsSC[2], escp/scp,
     esop, 0.1, eGLO, 0.001, 0.001, 0.001};
-  Bool_t ffix[9] = {kFALSE, kFALSE, kFALSE, kFALSE, kFALSE,
+  Bool_t ffix[9] = {kFALSE, kFALSE, kFALSE, kFALSE, FIX_GL,
     FORCE_GLO_SO, (FORCE_g3_same || FORCE_g5_same), FORCE_g4_same, !EW_ASYMMETRY};
   SetMinuitPars(9,fname,fstart,fstep,debug,ffix);
   minuit->SetFCN(fnchSCGapf);
@@ -708,7 +719,7 @@ void Calib_SC_GL(const char* input, const char* cuts, int scaler, int debug, con
   status = minuit->ExecuteCommand("MINIMIZE", arglist, 1);
   if (status) {
     printf("Fit failed for sc+gl, err = %d\n",status);
-    return;
+    return 1;
   }
   // covarAdjust is a fudge factor for how the covariance (which is negative)
   // between pars 2 and 4 modifies the variance on the product of their exponentials
@@ -720,7 +731,7 @@ void Calib_SC_GL(const char* input, const char* cuts, int scaler, int debug, con
   status = minuit->ExecuteCommand("SET LIM", 0, 0); // Remove limits before MINOS
   if (status) {
     printf("SetLimit failed for sc+gl, err = %d\n",status);
-    return;
+    return 1;
   }
   double eplus,eminus,eparab,gcc;
   for (k=0;k<npar;k++) {
@@ -733,13 +744,13 @@ void Calib_SC_GL(const char* input, const char* cuts, int scaler, int debug, con
     status = minuit->ExecuteCommand("MINIMIZE", arglist, 1);
     if (status) {
       printf("Fit failed for sc+gl, err = %d\n",status);
-      return;
+      return 1;
     }
     arglist[1] = (double) k+1;
     status = minuit->ExecuteCommand("MINOS", arglist, 2);
     if (status) {
       printf("Fit errors failed for sc+gl, err = %d\n",status);
-      return;
+      return 1;
     }
     minuit->GetParameter(k,parName[k],fitPars[k],temp1,temp2,temp3);
     minuit2->mnerrs(k,eplus,eminus,eparab,gcc);
@@ -849,12 +860,12 @@ void Calib_SC_GL(const char* input, const char* cuts, int scaler, int debug, con
     status = minuit->ExecuteCommand("MINIMIZE", arglist, 1);
     if (status) {
       printf("Fit failed for sc+gl by sector, err = %d\n",status);
-      return;
+      return 1;
     }
     status = minuit->ExecuteCommand("SET LIM", 0, 0); // Remove limits before MINOS
     if (status) {
       printf("SetLimit failed for sc+gl by sector, err = %d\n",status);
-      return;
+      return 1;
     }
     for (k=0;k<npar;k++) {
       if (bfix[k]) { fitPars[k] = bstart[k]; fitParErrs[k] = 0; continue; }
@@ -866,13 +877,13 @@ void Calib_SC_GL(const char* input, const char* cuts, int scaler, int debug, con
       status = minuit->ExecuteCommand("MINIMIZE", arglist, 1);
       if (status) {
         printf("Fit failed for sc+gl by sector, err = %d\n",status);
-        return;
+        return 1;
       }
       arglist[1] = (double) k+1;
       status = minuit->ExecuteCommand("MINOS", arglist, 2);
       if (status) {
         printf("Fit errors failed for sc+gl by sector, err = %d\n",status);
-        return;
+        return 1;
       }
       minuit->GetParameter(k,parName[k],fitPars[k],temp1,temp2,temp3);
       minuit2->mnerrs(k,eplus,eminus,eparab,gcc);
@@ -943,7 +954,7 @@ void Calib_SC_GL(const char* input, const char* cuts, int scaler, int debug, con
   
   
   
-  if (NO_PLOTS) return;
+  if (NO_PLOTS) return 0;
 
 
   //////////////////////////////////////////
@@ -1157,7 +1168,7 @@ void Calib_SC_GL(const char* input, const char* cuts, int scaler, int debug, con
       printf("sc = %6.4g * ((%s) - (%6.4g))",sce[jmin],detbest,sof[jmin]);
       printf(" with GL = %5.2f\n\n",ugl[i]); // glmode[i]==2 ?
     }
-    return;
+    return 0;
   }
 
 
@@ -1416,6 +1427,7 @@ void Calib_SC_GL(const char* input, const char* cuts, int scaler, int debug, con
   }
 
 
+  return 0;
 }
 
 //////////////////////////////////////////
@@ -2302,8 +2314,14 @@ void PrintResult(double scp, double escp, double sop, double esop,
 }
 
 /////////////////////////////////////////////////////////////////
-// $Id: Calib_SC_GL.C,v 2.10 2019/10/21 15:20:57 genevb Exp $
+// $Id: Calib_SC_GL.C,v 2.12 2021/04/21 21:51:52 genevb Exp $
 // $Log: Calib_SC_GL.C,v $
+// Revision 2.12  2021/04/21 21:51:52  genevb
+// Better initial values for gapf fit, and don't do second PCA iteration if first fails (needed return values)
+//
+// Revision 2.11  2021/04/16 16:11:57  genevb
+// Introduce FIX_GL switch for fixed GL fits
+//
 // Revision 2.10  2019/10/21 15:20:57  genevb
 // Avoid Minuit complaint when asking about a fixed parameter
 //

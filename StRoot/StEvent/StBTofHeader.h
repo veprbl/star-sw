@@ -1,10 +1,10 @@
 /*!
- * \class StBTofHeader 
+ * \class StBTofHeader
  * \author Xin Dong, Nov 2008
  */
 /***************************************************************************
  *
- * $Id: StBTofHeader.h,v 2.4 2010/05/17 17:47:16 ullrich Exp $
+ * $Id: StBTofHeader.h,v 2.5 2021/05/28 19:00:21 ullrich Exp $
  *
  * Author: Xin Dong, Nov 2008
  ***************************************************************************
@@ -16,6 +16,9 @@
  ***************************************************************************
  *
  * $Log: StBTofHeader.h,v $
+ * Revision 2.5  2021/05/28 19:00:21  ullrich
+ * Added 3 member plus access fct: mTCanFirst, mTCanLast, mNTzeroCan (Frank)
+ *
  * Revision 2.4  2010/05/17 17:47:16  ullrich
  * Increase version number to 2.
  *
@@ -40,7 +43,7 @@
 class StBTofHeader : public StObject {
 public:
     enum {MAXFIBER=4, MAXVPD=19, MAXVPDVZ=20};
-    
+
     StBTofHeader();
     ~StBTofHeader();
 
@@ -56,7 +59,21 @@ public:
     double         vpdTime(StBeamDirection eastwest, int tubeId) const;
     unsigned int   triggerTime(int fiberId) const;
     int            nTzero() const;
-    
+
+    int            nTzeroCan() const;
+    double         tCanFirst() const;
+    double         tCanLast() const;
+    int            vpdEHits() const;
+    int            vpdWHits() const;
+    int            vpdEGoodHits() const;
+    int            vpdWGoodHits() const;
+    double         earliestVpdEHit() const;
+    double         earliestVpdWHit() const;
+    double         closestVpdEHit() const;
+    double         closestVpdWHit() const;
+    double         latestVpdEHit() const;
+    double         latestVpdWHit() const;
+
     void         setFiberHeader(int fiberId, short val);
     void         setFiberTriggerWord(int fiberId, unsigned int val);
     void         setVpdHit(StBeamDirection eastwest, int tubeId);
@@ -70,6 +87,20 @@ public:
     void         setTriggerTime(unsigned int tdc, int fiberId);
     void         setNTzero(short n);
 
+    void         setNTzeroCan(short nCan);
+    void         setTCanFirst(double tFirst);
+    void         setTCanLast(double tLast);
+    void         setVpdEHits(short vpdEHits);
+    void         setVpdWHits(short vpdWHits);
+    void         setVpdEGoodHits(short vpdEGoodHits);
+    void         setVpdWGoodHits(short vpdWGoodHits);
+    void         setEarliestVpdEHit(double earliestVpdEHit);
+    void         setEarliestVpdWHit(double earliestVpdWHit);
+    void         setClosestVpdEHit(double closestVpdEHit);
+    void         setClosestVpdWHit(double closestVpdWHit);
+    void         setLatestVpdEHit(double latestVpdEHit);
+    void         setLatestVpdWHit(double latestVpdWHit);
+
 protected:
     Short_t      mFiberHeader[MAXFIBER];
     UInt_t       mFiberTriggerWord[MAXFIBER];
@@ -81,8 +112,21 @@ protected:
     Double_t     mVpdTime[2][MAXVPD];
     UInt_t       mTriggerTime[MAXFIBER];
     Short_t      mNTzero;
+    Short_t      mNTzeroCan;
+    Double_t     mTCanFirst;
+    Double_t     mTCanLast;
+    Double_t     mVpdEHits;
+    Double_t     mVpdWHits;
+    Double_t     mVpdEGoodHits;
+    Double_t     mVpdWGoodHits;
+    Double_t     mEarliestVpdEHit;
+    Double_t     mEarliestVpdWHit;
+    Double_t     mClosestVpdEHit;
+    Double_t     mClosestVpdWHit;
+    Double_t     mLatestVpdEHit;
+    Double_t     mLatestVpdWHit; 
 
-    ClassDef(StBTofHeader,2)
+    ClassDef(StBTofHeader,3)
 };
 
 #endif

@@ -1,5 +1,8 @@
-// $Id: StObject.h,v 1.20 2015/08/28 19:54:18 perev Exp $
+// $Id: StObject.h,v 1.21 2021/05/11 23:57:40 perev Exp $
 // $Log: StObject.h,v $
+// Revision 1.21  2021/05/11 23:57:40  perev
+// TBuffer.h added fpr compatibility Star6
+//
 // Revision 1.20  2015/08/28 19:54:18  perev
 // Add specific copy constructor to StObject.
 // This ctr set zero to bit 1<<22. This boit means that object belongs
@@ -37,6 +40,7 @@
 // StObject class is a base class to implement StEvent                  //
 //                                                                      //
 //////////////////////////////////////////////////////////////////////////
+#include "TBuffer.h"
 #include "TDataSet.h"
 
 class StXRefManager;
@@ -54,9 +58,7 @@ public:
           StObject(const StObject &sto);
           StObject &operator=(const StObject &sto);
   virtual ~StObject();
-  virtual void Browse(TBrowser *b);
   
-  virtual Bool_t IsFolder() 	const;
   virtual TObject *clone() 	const {return ((TObject*)this)->Clone();}
   Int_t   isZombie() 		const {return IsZombie();}
   virtual void makeZombie(int flg=1)

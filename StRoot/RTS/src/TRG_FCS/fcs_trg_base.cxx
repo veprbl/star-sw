@@ -42,6 +42,9 @@ u_short        fcs_trg_base::JETTHR1 ;
 u_short        fcs_trg_base::JETTHR2 ;
 u_short        fcs_trg_base::ETOTTHR ;
 u_short        fcs_trg_base::HTOTTHR ;
+u_short        fcs_trg_base::EHTTHR ;
+u_short        fcs_trg_base::HHTTHR ;
+u_short        fcs_trg_base::PHTTHR ;
 
 u_int fcs_trg_base::data_format ;
 
@@ -96,7 +99,8 @@ void fcs_trg_base::init(const char* fname)
 	for(int j=0;j<ADC_DET_COU;j++) {
 	for(int k=0;k<DEP_COU;k++) {
 	for(int c=0;c<32;c++) {
-		p_g[i][j][k][c].gain = (1<<6) ;	// set gains to 1: THIS IS FY19 -- need to override in code
+	  // p_g[i][j][k][c].gain = (1<<6) ;	// set gains to 1: THIS IS FY19 -- need to override in code
+	  p_g[i][j][k][c].gain = (1<<8) ; // Akio changing to 4.8 fixed
 	}}}}
 
 
@@ -130,7 +134,7 @@ void fcs_trg_base::init(const char* fname)
 
 	}
 	else if(!sim_mode) {
-		LOG(TERR,"init:realtime: ht_threshold is %d",fcs_data_c::ht_threshold) ;
+//		LOG(TERR,"init:realtime: ht_threshold is %d",fcs_data_c::ht_threshold) ;
 
 		for(int i=0;i<3;i++) {	// known in realtime
 			ht_threshold[i] = fcs_data_c::ht_threshold ;
@@ -209,6 +213,9 @@ void fcs_trg_base::init(const char* fname)
 	JETTHR2 = 128;
 	ETOTTHR = 10 ;
 	HTOTTHR = 10 ;
+	EHTTHR = 32 ;
+	HHTTHR = 32 ;
+	PHTTHR = 0 ;
 
 	// IMPORTANT: Requested Stage_x versions defaults
 	// Either set by the user to her/his wishes or picked up from the DAQ file
@@ -232,6 +239,10 @@ void fcs_trg_base::run_start(u_int run)
 	memset(&errs,0,sizeof(errs)) ;
 	memset(&good,0,sizeof(good)) ;
 	memset(&statistics,0,sizeof(statistics)) ;
+
+	// cleanup, just in case
+	memset(d_in,0,sizeof(d_in)); 
+	memset(&d_out,0,sizeof(d_out)); 
 
 	start_event() ;	// just in case
 
@@ -449,15 +460,16 @@ void fcs_trg_base::fill_event(int det, int ns, int dep, int c, u_short *d16, int
 
 int fcs_trg_base::end_event()
 {
+	event_bad = 0 ;
+
 	if(!got_one) return 0 ;	// nothing to do; let's not waste time
 
 	verify_event_io() ;	// verify interconnectivity 
 
 	int dsmout = 0;
 
-	s1_bad = 0 ;
-	s2_bad = 0 ;
-	s3_bad = 0 ;
+	dsm_any = 0 ;
+	dsm_xing = 0 ;
 
 	for(int xing=0;xing<marker.last_xing;xing++) {
     		if(log_level>1) {
@@ -465,6 +477,11 @@ int fcs_trg_base::end_event()
 		}
 
 		dsmout = run_event_sim(xing,sim_mode) ;
+
+		if(dsmout) {
+			dsm_any = dsmout ;
+			dsm_xing = xing ;
+		}
 
 		if(sim_mode) {	// when running offline
 			dump_event_sim(xing) ;
@@ -560,21 +577,26 @@ int fcs_trg_base::verify_event_io()
 				}
 
 			
+				
+
 				//LOG(WARN,"xing %d:%d, ns %d: mask 0x%llX, ix %d",x,t,ns,mask,ix) ;
 
 				for(int i=0;i<34;i++) {
 					if(mask & (1ll<<i)) ;
 					else continue ;
 
+					// separate mask
+					if(s2_ch_mask[ns] & (1ll<<i)) continue ;
 
 					if(s2_from_s1[i] || s1_to_s2[i]) {
 						//printf("... xing %d:%d, ns %d: %d: s2_in 0x%02X, s1_out 0x%02X\n",x,t,ns,i,s2_from_s1[i],s1_to_s2[i]) ;
 					}
 
 					if(s2_from_s1[i] != s1_to_s2[i]) {
+						event_bad |= 0x10 ;
 
-						if(log_level>1) LOG(ERR,"evt %d: S1_to_S2 IO: NS %d: ch %d: xing %d:%d: out 0x%02X, in 0x%02X\n",
-						    good,ns,i,x,t,s1_to_s2[i],s2_from_s1[i]) ;
+						if(log_level>1) LOG(ERR,"evt %d: S1_to_S2 IO: NS %d: ch %d: xing %d:%d: out 0x%02X, in 0x%02X",
+						    evts,ns,i,x,t,s1_to_s2[i],s2_from_s1[i]) ;
 
 						if(ns==0 && i<17) errs.io_s1_to_s2[0]++ ;
 						else if(ns==0) errs.io_s1_to_s2[1]++ ;
@@ -627,6 +649,8 @@ int fcs_trg_base::verify_event_io()
 				int s2_to_s3 = d_in[x].s2[c/2].s2_to_s3[cc].d[t] ;
 
 				if(s2_to_s3 != s3_from_s2) {
+					event_bad |= 0x20 ;
+
 					errs.io_s2_to_s3++ ;
 					err = 1 ;
 				}
@@ -677,8 +701,9 @@ int fcs_trg_base::dump_event_sim(int xing)
 		for(int t=0;t<8;t++) {
 			int d_sim = d_out.s1[i][j][k].s1_to_s2.d[t] ;
 
-			if(d_sim) printf("S1 sim: %d:%d:%d - xing %d:%d, dta %d\n",
-			       i,j,k,xing,t,d_sim) ;
+			if(d_sim & fcs_trgDebug>0) 
+			  printf("S1 sim: %d:%d:%d - xing %d:%d, dta %d\n",
+				 i,j,k,xing,t,d_sim) ;
 		}
 	}
 	}
@@ -693,13 +718,14 @@ int fcs_trg_base::dump_event_sim(int xing)
 		for(int t=0;t<8;t++) {
 			int d_sim = d_out.s2[i].s2_to_s3[j].d[t] ;
 
-			printf("S2 sim: %d:%d - xing %d:%d, dta 0x%03X\n",
-			       i,j,xing,t,d_sim) ;
+			if(fcs_trgDebug>0)
+			  printf("S2 sim: %d:%d - xing %d:%d, dta 0x%03X\n",
+				 i,j,xing,t,d_sim) ;
 		}
 	}
 	}
 
-	printf("S3 sim: to DSM 0x%04X\n",d_out.s3.dsm_out) ;
+	//printf("S3 sim: to DSM 0x%04X\n",d_out.s3.dsm_out) ;
 
 	return 0 ;
 }
@@ -785,7 +811,9 @@ int fcs_trg_base::verify_event_sim(int xing)
 
 	}}}
 	
-	if(s1_failed) s1_bad++ ;
+	if(s1_failed) {
+		event_bad |= 1 ;
+	}
 
 	// verify stage_2 data locally to stage_2 DEP
 	for(int i=0;i<NS_COU;i++) {
@@ -841,7 +869,9 @@ int fcs_trg_base::verify_event_sim(int xing)
 	}}
 
 
-	if(s2_failed) s2_bad++ ;
+	if(s2_failed) {
+		event_bad |= 2 ;
+	}
 
 	// verify stage_3 locally to stage_2 DEP
 	if(tb_cou[0][3][0]==0) return bad ;	// no stage_3 in data
@@ -873,23 +903,25 @@ int fcs_trg_base::verify_event_sim(int xing)
 	}
 
 	// in case I want printouts
-	for(int t=0;t<8;t++) {
+	for(int t=0;t<4;t++) {
 		int d_sim = d_out.s3.dsm_out ;
 		int d_i = d_in[xing].s3.dsm_out.d[t] ;
 
 		if(want_log && log_level>0) {
-			LOG(ERR,"evt %d: S3 sim: xing %d:%d: sim 0x%03X, dta 0x%03X %s",evts,xing,t,
+			LOG(ERR,"evt %d: S3 sim: xing %d:%d: sim 0x%04X, dta 0x%04X %s",evts,xing,t,
 			       d_sim,d_i,want_log?"ERROR":"") ;
 
 		}
 		if(want_print && log_level > 3) {
-			printf("evt %d: S3 sim: xing %d:%d: sim 0x%03X, dta 0x%03X %s\n",evts,xing,t,
+			printf("evt %d: S3 sim: xing %d:%d: sim 0x%04X, dta 0x%04X %s\n",evts,xing,t,
 			       d_sim,d_i,want_log?"ERROR":"") ;
 		}
 	}
 			    
 
-	if(s3_failed) s3_bad++ ;
+	if(s3_failed) {
+		event_bad |= 4 ;
+	}
 
 	return bad ;
 }
@@ -1033,6 +1065,9 @@ void fcs_trg_base::stage_0(adc_tick_t adc, geom_t geo, ped_gain_t *pg, u_int *dt
 	case 1 :
 		stage_0_202101(adc, geo, pg, dta_out) ;
 		break ;
+	case 2 :
+		stage_0_202103(adc, geo, pg, dta_out) ;
+		break ;
 	default :
 		*dta_out = 0 ;
 		LOG(ERR,"stage_0: unknown version %d",stage_version[0]) ;
@@ -1072,10 +1107,16 @@ void fcs_trg_base::stage_2(link_t ecal[], link_t hcal[], link_t pres[], geom_t g
 	case 2 :
 		stage_2_TAMU_202202(ecal,hcal,pres,geo,output) ;
 		break ;
+	case 3 :
+		stage_2_202203(ecal,hcal,pres,geo,output) ;
+		break ;
 
 	// debugging versions below
 	case 0xFF210201 :
 		stage_2_tonko_202101(ecal,hcal,pres,geo,output) ;
+		break ;
+	case 0xFF210204 :
+		stage_2_tonko_202104(ecal,hcal,pres,geo,output) ;
 		break ;
 	default :
 		LOG(ERR,"Unknown stage_2 version %d",stage_version[2]) ;
@@ -1095,6 +1136,9 @@ void fcs_trg_base::stage_3(link_t link[4], u_short *dsm_out)
 		break ;
 	case 1 :
 		stage_3_202201(link,dsm_out) ;
+		break ;
+	case 3 :
+		stage_3_202203(link,dsm_out) ;
 		break ;
 	// debugging versions below
 	case 0xFF210201 :
