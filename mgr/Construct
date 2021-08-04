@@ -282,7 +282,7 @@ my $items = "";# print "items $#items  = @items\n";
 if ( defined($SKIP_DIRS) ) {
   $items = join("|", split(" ", $SKIP_DIRS));
 } else {
-  $items = "g2r|GeoTestMaker|Kinematics|StEEmcPool|StFgtPool|StHighptPool|StJetFinder|StShadowMaker|StSpinMaker|StHbtMaker";
+  $items = "g2r|Kinematics|StEEmcPool|StFgtPool|StHighptPool|StShadowMaker|StHbtMaker";
 }
 
 if ( $#items > -1){
