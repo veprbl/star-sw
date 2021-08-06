@@ -140,7 +140,6 @@ void StEEmcIUMixMaker::mixReal()
   if ( !mPoints.size() ) return; 
 
   Float_t emax=0.;
-  Int_t   imax=0;
   Int_t   count=0;
  
   StMuEvent *event = mMuDstMaker -> muDst() -> event();
@@ -199,7 +198,6 @@ void StEEmcIUMixMaker::mixReal()
 
 	if ( mCandidates.back().energy() > emax ) { 
 	  emax = mCandidates.back().energy();
-	  imax=count;
 	}
 
       }

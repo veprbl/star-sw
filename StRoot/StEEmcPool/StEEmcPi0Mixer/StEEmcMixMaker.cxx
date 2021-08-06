@@ -135,7 +135,6 @@ void StEEmcMixMaker::mixReal()
   if ( !mPoints.size() ) return; 
 
   Float_t emax=0.;
-  Int_t   imax=0;
   Int_t   count=0;
 
 
@@ -181,7 +180,6 @@ void StEEmcMixMaker::mixReal()
 	mCandidates.push_back ( StEEmcPair( point1, point2, vertex, vertex ) );
 	if ( mCandidates.back().energy() > emax ) { 
 	  emax = mCandidates.back().energy();
-	  imax=count;
 	}
 
       }
