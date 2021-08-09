@@ -127,7 +127,6 @@ RUN source /etc/profile \
  && cons +StarVMC/Geometry \
  && cons %pams/sim/g2r %OnlTools \
          %StRoot/StarGenerator/Kinematics \
-         %StRoot/StFgtPool %StRoot/StHighptPool \
          %StRoot/StShadowMaker %StRoot/StHbtMaker \
  && find /star-sw/.$STAR_HOST_SYS -name *.o -exec rm '{}' \;
 
