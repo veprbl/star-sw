@@ -3,7 +3,23 @@ name: CI Build
 on: [push, pull_request]
 
 jobs:
+  pre_job:
+    # continue-on-error: true # Uncomment once integration is finished
+    runs-on: ubuntu-latest
+    # Map a step output to a job output
+    outputs:
+      should_skip: ${{ steps.skip_check.outputs.should_skip }}
+    steps:
+      - id: skip_check
+        uses: fkirc/skip-duplicate-actions@v3.4.1
+        with:
+          concurrent_skipping: 'same_content'
+          paths_ignore: '[".github/CODEOWNERS"]'
+          do_not_skip: '["pull_request", "workflow_dispatch", "schedule"]'
+
   ROOT5:
+    needs: pre_job
+    if: ${{ needs.pre_job.outputs.should_skip != 'true' }}
     runs-on: ubuntu-latest
     steps:
       - name: Set up Docker Buildx
@@ -16,7 +32,10 @@ jobs:
           push: false
           tags: ghcr.io/star-bnl/star-sw-root5-build
           file: docker/Dockerfile.root5
+
   ROOT6:
+    needs: pre_job
+    if: ${{ needs.pre_job.outputs.should_skip != 'true' }}
     runs-on: ubuntu-latest
     steps:
       - name: Set up Docker Buildx
