@@ -13,9 +13,9 @@ jobs:
       - id: skip_check
         uses: fkirc/skip-duplicate-actions@v3.4.1
         with:
-          concurrent_skipping: 'same_content'
+          concurrent_skipping: 'same_content_newer'
           paths_ignore: '[".github/CODEOWNERS"]'
-          do_not_skip: '["pull_request", "workflow_dispatch", "schedule"]'
+          do_not_skip: '["workflow_dispatch", "schedule"]'
 
   ROOT5:
     needs: pre_job
