@@ -121,11 +121,13 @@ diff --git a/asps/rexe/Conscript b/asps/rexe/Conscript \n\
      if ($LIBPATH) { $LIBPATH .= $main::PATH_SEPARATOR; }\n' \
  && patch -p1 < root4star_cons.patch
 
+RUN yum install -y libasan
+
 RUN source /etc/profile \
  # Override default Vc version
  && export Vc_DIR=/opt/software/linux-scientific7-x86_64/gcc-4.8.5/vc_-0.7.4-gqbhzu2x5u2dbe5tafxnl36xj5qbwov4 \
  && cd /star-sw \
- && cons %StRoot/StShadowMaker \
+ && cons %StRoot/StShadowMaker EXTRA_CPPFLAGS="-fsanitize=address" EXTRA_LDFLAGS="-fsanitize=address" \
  && find /star-sw/.$STAR_HOST_SYS -name *.o -exec rm '{}' \;
 
 RUN install /star-sw/StRoot/macros/.rootrc .
