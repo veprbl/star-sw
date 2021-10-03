@@ -6,5 +6,9 @@
  
 #pragma link C++ class  St_Bfc-;
 #pragma link C++ class  Bfc_st+;
+
+#pragma link C++ global BFC;
+#pragma link C++ global NoChainOptions;
+
 #endif
 

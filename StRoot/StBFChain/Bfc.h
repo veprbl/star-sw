@@ -1,9 +1,12 @@
-#ifndef __Bfc_st__
-#define __Bfc_st__
+#ifndef __Bfc_h__
+#define __Bfc_h__
+
+#include <vector>
+
 #include "TDataSet.h"
 #include "TTable.h"
 #include "Ttypes.h"
-#define STR_OBSOLETE "WARNING *** Option is OBSOLETE ***"
+
 #define USE_BFCTIMESTAMP
 struct Bfc_st {
   Char_t       Key[64];      /* nick name */
@@ -31,4 +34,7 @@ class St_Bfc : public TTable {
   ClassDef(St_Bfc,1) //C++ container for chain/makers status 
 };
 
-#endif /* __Bfc_st__ */
+extern Bfc_st BFC[];
+extern unsigned NoChainOptions;
+
+#endif /* __Bfc_h__ */
