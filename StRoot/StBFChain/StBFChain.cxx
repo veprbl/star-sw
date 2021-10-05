@@ -39,7 +39,6 @@
 
 
 // NoChainOptions -> Number of chain options auto-calculated
-TableImpl(Bfc);
 ClassImp(StBFChain);
 
 //_____________________________________________________________________________
