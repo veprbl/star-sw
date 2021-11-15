@@ -3,14 +3,12 @@ name: Build Containers
 on:
   push:
     branches:
-      - main
-      - 'SL*'
+      - '*'
     tags:
       - '*'
 
 jobs:
   ROOT5:
-    if: github.repository_owner == 'star-bnl'
     runs-on: ubuntu-latest
     steps:
       - name: Get branch name
