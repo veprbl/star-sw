@@ -10,6 +10,8 @@ on:
 jobs:
   ROOT5:
     runs-on: ubuntu-latest
+    permissions:
+      packages: write
     steps:
       - name: Get branch name
         id: branch-name
@@ -48,6 +50,8 @@ jobs:
   ROOT6:
     if: github.repository_owner == 'star-bnl'
     runs-on: ubuntu-latest
+    permissions:
+      packages: write
     steps:
       - name: Get branch name
         id: branch-name
