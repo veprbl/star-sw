@@ -245,9 +245,9 @@ extern inline void swapBuff32(unsigned int *buff, int n)
 /********** UGLINESS for CINT which does not seem to be able to parse "sys/types.h" ********/
 
 #ifdef __CINT__
-#define u_int unsigned int
-typedef unsigned char u_char ;
-typedef unsigned short u_short ;
+#define uint32_t unsigned int
+typedef unsigned char uint8_t ;
+typedef unsigned short uint16_t ;
 #endif
 
 

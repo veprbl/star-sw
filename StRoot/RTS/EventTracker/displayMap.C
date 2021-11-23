@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <fcntl.h>
-#include <sys/types.h>
+#include <stdint.h>
 #include <sys/stat.h>
 #include <unistd.h>
 #include <string.h>
@@ -21,7 +21,7 @@ int main(int, char *[])
   }
   
   int sz = statbuff.st_size;
-  uint *buff = (uint *)malloc(sz);
+  unsigned int *buff = (unsigned int *)malloc(sz);
   float *fbuff = (float *)buff;
 
   if(!buff) {
