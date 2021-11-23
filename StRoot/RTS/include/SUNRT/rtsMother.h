@@ -1,7 +1,7 @@
 #ifndef _RTSMOTHER_H_
 #define _RTSMOTHER_H_
 
-#include <sys/types.h>
+#include <stdint.h>
 #include <time.h>
 
 struct SegDef

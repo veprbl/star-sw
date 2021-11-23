@@ -38,7 +38,7 @@
 #include <sys/mman.h>
 #include <SUNRT/msgQLib.h>
 #include <SUNRT/ipcQLib.hh>
-#include <sys/types.h>
+#include <stdint.h>
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <errno.h>

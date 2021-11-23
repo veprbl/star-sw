@@ -4,7 +4,7 @@
 
 #include <stdio.h>
 #include <unistd.h>
-#include <sys/types.h>
+#include <stdint.h>
 #include <string.h>
 #include <daqFormats.h>
 #include <rts.h>
@@ -19,20 +19,20 @@
 
 // control....
 char g_fn[255];    // filename
-uint g_seq = 0;        // only write this event if != 0
+unsigned int g_seq = 0;        // only write this event if != 0
 float g_bfield = 1000;
-uint g_ptracks = 0;
-uint g_nftracks = 0;
-uint g_nctracks = 0;
-uint g_pause = 0;
-uint g_vertex = 0;
+unsigned int g_ptracks = 0;
+unsigned int g_nftracks = 0;
+unsigned int g_nctracks = 0;
+unsigned int g_pause = 0;
+unsigned int g_vertex = 0;
 
 void printL3Info(l3_t& l3)
 {
   printf("%d tracks, %d clusters: Vertex = (%f, %f %f)\n",l3.tracks_num, l3.cluster_num, l3.xVertex,l3.yVertex,l3.zVertex);
 
   if(g_ptracks) {
-    for(u_int i=0;i<l3.tracks_num;i++) {
+    for(uint32_t i=0;i<l3.tracks_num;i++) {
       global_track *track = &l3.track[i];
 
       printf("%5d: pt=%5.3f z0=%7.2f q=%2d nHits=%2d ndedx=%2d ",
@@ -212,7 +212,7 @@ int main(int argc, char *argv[])
     }
       
 
-    //printf("*********** %s  0x%x **********\n",datap->bh.bank_type, (uint) datap);
+    //printf("*********** %s  0x%x **********\n",datap->bh.bank_type, (unsigned int) datap);
 
     // Now, track the event into a new buffer l3p (this was allocated above)
     //
@@ -287,7 +287,7 @@ int main(int argc, char *argv[])
 
     // This is a dump of all the tracks... its probably better to use
     // the standard l3Reader method however...
-    //    L3_GTD *gtd = (L3_GTD *)((uint)l3p + l3p->tracks.off*4);
+    //    L3_GTD *gtd = (L3_GTD *)((unsigned int)l3p + l3p->tracks.off*4);
     //    LOG(DBG, "GTD size = %d\n",gtd->bh.length * 4);
     //    if(g_ptracks) evtTracker->dumpGTD(gtd); 
   }

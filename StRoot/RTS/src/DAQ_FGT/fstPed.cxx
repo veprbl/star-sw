@@ -1,5 +1,5 @@
 #include <stdio.h>
-#include <sys/types.h>
+#include <stdint.h>
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
@@ -18,17 +18,17 @@
 
 
 // real time in useconds
-static u_int t_mark()
+static uint32_t t_mark()
 {
         timespec ts ;
 
         clock_gettime(CLOCK_MONOTONIC,&ts) ;
 
-        return (u_int)(ts.tv_sec*1000000+ts.tv_nsec/1000) ;
+        return (uint32_t)(ts.tv_sec*1000000+ts.tv_nsec/1000) ;
 }
 
 // returns microseconds; good enough
-static u_int t_delta(u_int mark)
+static uint32_t t_delta(uint32_t mark)
 {
         return (unsigned int)((t_mark() - mark)) ;
 }
@@ -173,10 +173,10 @@ int fstPed::do_zs(char *src, int in_bytes, char *dst, int rdo1, int id)
 	int dumped_cou = 0 ;
 //	int all_cou = 0 ;
 
-	u_int mark = t_mark() ;
+	uint32_t mark = t_mark() ;
 
 	short *d16 = (short *) dst ;
-	u_int *d32 = (u_int *)dst ;
+	uint32_t *d32 = (uint32_t *)dst ;
 
 	fgt_stat[rdo1-1].evts++ ;
 //	int evt = fgt_stat[rdo1-1].evts ;
@@ -264,7 +264,7 @@ int fstPed::do_zs(char *src, int in_bytes, char *dst, int rdo1, int id)
 //	do_ped_sub = 1 ;
 	*d32++ = META_PED_ZS_VERSION ;	// zs _AND_ ped subtracted
 
-	u_int *dta_bytes = d32++ ;	// reserve space
+	uint32_t *dta_bytes = d32++ ;	// reserve space
 	*d32++ = meta_bytes ;
 
 	memcpy(d32,&meta_zs,meta_bytes) ;
@@ -303,13 +303,13 @@ int fstPed::do_zs(char *src, int in_bytes, char *dst, int rdo1, int id)
 		memset(grp,0,sizeof(grp)) ;
 		int bad_group = 0 ;
 
-		u_short dta[128][9] ;	// cache
+		uint16_t dta[128][9] ;	// cache
 
 
-		//u_int mark = t_mark() ;
+		//uint32_t mark = t_mark() ;
 
 		// first pass, accumulate for the CMN
-		for(u_int i=0;i<dd->ncontent;i++) {
+		for(uint32_t i=0;i<dd->ncontent;i++) {
 			int ch = f[i].ch ;
 
 			int g = cmnGroup[apv][ch] ;
@@ -536,7 +536,7 @@ void fstPed::accum(char *evbuff, int bytes, int rdo1)
 		int cou ;
 	} fst_grp[4][9] ;
 
-	u_short grp_dta[128][9] ;
+	uint16_t grp_dta[128][9] ;
 
 	memset(fst_grp,0,sizeof(fst_grp)) ;
 
@@ -561,7 +561,7 @@ void fstPed::accum(char *evbuff, int bytes, int rdo1)
 
 		if(do_cmn==2) memset(fst_grp,0,sizeof(fst_grp)) ;
 
-		for(u_int i=0;i<dd->ncontent;i++) {
+		for(uint32_t i=0;i<dd->ncontent;i++) {
 			int adc ;
 			int ch ;
 			int tb ;
@@ -754,7 +754,7 @@ double fstPed::do_thresh(double ns, int k, int do_log)
 		ped /= cou ;
 		rms /= cou ;
 
-		//////////p->thr[arm][apv][c] = (u_short) (ped + rms * n_sigma + 0.5) ;
+		//////////p->thr[arm][apv][c] = (uint16_t) (ped + rms * n_sigma + 0.5) ;
 
 		}
 		}
@@ -939,7 +939,7 @@ void fstPed::calc()
 int fstPed::to_evb(char *buff)
 {
 	int r, arm, apv, c, t ;
-	u_short *dta = (u_short *) buff ;	
+	uint16_t *dta = (uint16_t *) buff ;	
 
 
 	if(!valid) {
@@ -964,7 +964,7 @@ int fstPed::to_evb(char *buff)
 		struct peds_t *ped = peds + r ;
 
 		*dta++ = r+1 ;			// ARC, from 1
-		u_short *apv_cou = dta++ ;
+		uint16_t *apv_cou = dta++ ;
 		*apv_cou = 0 ;
 
 		// need to dump the apv_meta_zs_t bank!!!
@@ -981,15 +981,15 @@ int fstPed::to_evb(char *buff)
 		for(c=0;c<FGT_CH_COU;c++) {
 		for(t=0;t<tb_cou_ped;t++) {
 
-				u_short pp ;
+				uint16_t pp ;
 
-				pp = (u_short)(ped->ped[arm][apv][c][t]*16.0 + 0.5)  ;
+				pp = (uint16_t)(ped->ped[arm][apv][c][t]*16.0 + 0.5)  ;
 				*dta++ = pp;
 
-				pp = (u_short)(ped->rms[arm][apv][c][t]*16.0 + 0.5) ;
+				pp = (uint16_t)(ped->rms[arm][apv][c][t]*16.0 + 0.5) ;
 				*dta++ = pp ;
 
-				pp = (u_short)(ped->cmn_rms[arm][apv][c][t]*16.0 + 0.5) ;
+				pp = (uint16_t)(ped->cmn_rms[arm][apv][c][t]*16.0 + 0.5) ;
 				*dta++ = pp ;
 
 		}
@@ -1128,7 +1128,7 @@ int fstPed::from_cache(char *fname)
 	return valid ;
 }
 
-int fstPed::to_cache(char *fname, u_int run, int dont_cache)
+int fstPed::to_cache(char *fname, uint32_t run, int dont_cache)
 {
 	FILE *f ;
 	char f_fname[128] ;
