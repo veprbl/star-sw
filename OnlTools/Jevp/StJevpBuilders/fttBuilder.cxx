@@ -273,7 +273,7 @@ void fttBuilder::processTPX(daqReader *rdr) {
 
             contents.tpxLayerRowStrip[Layer-1]->Fill( rstrip, row );
 
-            for(u_int i=0;i<dd->ncontent;i++) {
+            for(uint32_t i=0;i<dd->ncontent;i++) {
                 int TB = dd->adc[i].tb;
                 int ADC = dd->adc[i].adc;
                 // printf("    %3d %3d\n",dd->adc[i].tb,dd->adc[i].adc) ;
@@ -307,9 +307,9 @@ void fttBuilder::processVMM(daqReader *rdr) {
             printf("STGC VMM: sec %d, RDO %d\n",dd->sec,dd->rdo) ;
 
             struct stgc_vmm_t *vmm = (stgc_vmm_t *)dd->Void ;
-            for(u_int i=0;i<dd->ncontent;i++) {
-                u_char feb = vmm[i].feb_vmm >> 2 ;  // feb [0..5]
-                u_char vm = vmm[i].feb_vmm & 3 ;    // VMM [0..3]
+            for(uint32_t i=0;i<dd->ncontent;i++) {
+                uint8_t feb = vmm[i].feb_vmm >> 2 ;  // feb [0..5]
+                uint8_t vm = vmm[i].feb_vmm & 3 ;    // VMM [0..3]
 
                 printf("  FEB %d:%d, ch %02d: ADC %d, BCID %d\n",feb,vm,vmm[i].ch,
                        vmm[i].adc,vmm[i].bcid) ;
