@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <fcntl.h>
-#include <sys/types.h>
+#include <stdint.h>
 #include <sys/stat.h>
 #include <unistd.h>
 #include <string.h>
@@ -21,7 +21,7 @@ int main(int, char *[])
   }
   
   int sz = statbuff.st_size;
-  uint *buff = (uint *)malloc(sz);
+  unsigned int *buff = (unsigned int *)malloc(sz);
   float *fbuff = (float *)buff;
   char *cbuff = (char *)buff;
 
@@ -45,7 +45,7 @@ int main(int, char *[])
   close(fd);
 
   printf("#define MAPDOTBINFILE_SZ %d\n", sz);
-  printf("u_int mapdotbinfile[%d] = {\n", sz/4);
+  printf("uint32_t mapdotbinfile[%d] = {\n", sz/4);
   
   for(int i=0;i<sz/4;i++) {
     printf("0x%08x, ", buff[i]);
