@@ -389,12 +389,19 @@ if ( $pkg !~ /^sim$/ && $pkg !~ /^gen$/ ) {
 			# generally enable all warnings for now
 			$env->{ENV}->{AGML_WARNINGS} = 1==1; # $param::debug;
 
+			# cons doesn't come with a scanner for python dependencies
+			use File::Find;
+			my @file_list;
+			find(sub { return unless -f; return unless /\.py$/; push @file_list, "#$File::Find::name"; }, "mgr/Dyson");
+			push @file_list, "#$xml";
+			push @file_list, "#$agml_cmd";
+
 			if ( $xml =~ m/Compat/ ){
-			    Depends $env ["$OBJ/$agE"], ("#$xml", "#$agml_cmd");
+			    Depends $env ["$OBJ/$agE"], @file_list;
 			    Command $env ["$OBJ/$agE"], ("#$xml"), qq($agml_cmd --file=%1 --module=$agM --export=Mortran > %>);
 
 			} else {
-			    Depends $env ["$OBJ/$agX", "$OBJ/$agH", "$OBJ/$agE"], ("#$xml", "#$agml_cmd");
+			    Depends $env ["$OBJ/$agX", "$OBJ/$agH", "$OBJ/$agE"], @file_list;
 			    # Depends $env --> some rule to build extra dict on the fly
 
 			    Command $env ["$OBJ/$agX", "$OBJ/$agH"], ("#$xml"), qq($agml_cmd --file=%1 --module=$agM --export=AgROOT --path=%>:d);
