@@ -1,5 +1,7 @@
-# Pull SL7 image by digest (immutable identifier)
-FROM scientificlinux/sl@sha256:437d3402c454319a5443bb5a99844c8d6f454828c59dcfb2730f1bdff8f2f48c AS prep-stage
+# Doesn't work:
+# # Pull CentOS 7.3 image by digest (immutable identifier)
+# FROM centos@sha256:c5d48e81b9863c85f38f71584da4d3844a37d639d809e6357922fb57b49bb35d AS prep-stage
+FROM centos:7.3.1611 AS prep-stage
 
 SHELL ["/bin/bash", "-c"]
 ENV LC_ALL=en_US.UTF-8
@@ -45,7 +47,10 @@ RUN find -L /opt/software/* -type f -exec readlink -f '{}' \; | \
     awk -F: '{print $1}' | xargs strip -S
 
 
-FROM scientificlinux/sl@sha256:437d3402c454319a5443bb5a99844c8d6f454828c59dcfb2730f1bdff8f2f48c AS base-stage
+# Doesn't work:
+# # Pull CentOS 7.3 image by digest (immutable identifier)
+# FROM centos@sha256:c5d48e81b9863c85f38f71584da4d3844a37d639d809e6357922fb57b49bb35d AS base-stage
+FROM centos:7.3.1611 AS base-stage
 
 SHELL ["/bin/bash", "-c"]
 ENV LC_ALL=en_US.UTF-8
@@ -53,7 +58,7 @@ ENV LC_ALL=en_US.UTF-8
 COPY --from=prep-stage /opt/software /opt/software
 COPY --from=prep-stage /cern /cern
 COPY --from=prep-stage /star-spack/spack/var/spack/environments/star-env-root/loads /etc/profile.d/z10_load_spack_env_modules.sh
-COPY --from=prep-stage /star-spack/spack/share/spack/modules/linux-scientific7-x86_64 /opt/linux-scientific7-x86_64
+COPY --from=prep-stage /star-spack/spack/share/spack/modules/linux-centos7-x86_64 /opt/linux-centos7-x86_64
 
 # epel repo is for python-pip only
 RUN yum update -q -y \
@@ -71,7 +76,7 @@ RUN yum update -q -y \
 # Install extra python modules used by the STAR software
 RUN pip install pyparsing
 
-ENV MODULEPATH=/opt/linux-scientific7-x86_64
+ENV MODULEPATH=/opt/linux-centos7-x86_64
 
 ENV STAR=/star-sw
 ENV USE_64BITS=1
@@ -88,10 +93,10 @@ ENV PATH=$CERN_ROOT/bin:$STAR_BIN:$STAR/mgr:$PATH
 ENV LD_LIBRARY_PATH=$STAR_LIB:$LD_LIBRARY_PATH
 ENV LIBPATH+=:/lib64:/lib
 
-ENV MYSQL=/opt/software/linux-scientific7-x86_64/gcc-4.8.5/mysql-5.7.27-pfyt3fwtkubcc5eazmoqfick3lgp67mf
-ENV LIBXML2_DIR=/opt/software/linux-scientific7-x86_64/gcc-4.8.5/libxml2-2.9.10-4lxsmpa57bm3xs2cs3xapk3qccxflkfl
-ENV FASTJET_DIR=/opt/software/linux-scientific7-x86_64/gcc-4.8.5/fastjet-3.3.3-xj22tput5pd5atejy4igsrtgdtygi74u
-ENV GSL_DIR=/opt/software/linux-scientific7-x86_64/gcc-4.8.5/gsl-2.6-ao26bt7pm6xxywo2q7dcmhhg2lp2inx7
+ENV MYSQL=/opt/software/linux-centos7-x86_64/gcc-4.8.5/mysql-5.7.27-pfyt3fwtkubcc5eazmoqfick3lgp67mf
+ENV LIBXML2_DIR=/opt/software/linux-centos7-x86_64/gcc-4.8.5/libxml2-2.9.10-4lxsmpa57bm3xs2cs3xapk3qccxflkfl
+ENV FASTJET_DIR=/opt/software/linux-centos7-x86_64/gcc-4.8.5/fastjet-3.3.3-xj22tput5pd5atejy4igsrtgdtygi74u
+ENV GSL_DIR=/opt/software/linux-centos7-x86_64/gcc-4.8.5/gsl-2.6-ao26bt7pm6xxywo2q7dcmhhg2lp2inx7
 
 # Dummy directories checked by cons
 RUN mkdir $OPTSTAR/lib && mkdir $OPTSTAR/include
