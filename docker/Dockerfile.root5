@@ -74,7 +74,7 @@ RUN yum update -q -y \
  && yum clean all
 
 # Install extra python modules used by the STAR software
-RUN pip install pyparsing
+RUN pip install pyparsing==2.2.0
 
 ENV MODULEPATH=/opt/linux-centos7-x86_64
 
